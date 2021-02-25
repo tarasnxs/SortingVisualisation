@@ -11,8 +11,10 @@ public class BlackWhiteDataModel extends DataModel {
     @Override
     public void paint(Graphics graph) {
         graph.setColor(Color.BLACK);
+        graph.fillRect(0, 0, ARRAY_SIZE, ARRAY_SIZE);
+        graph.setColor(Color.WHITE);
         for (int j = 0; j < dataArray[0].length; j++) {
-            graph.fillRect(0,j,dataArray[0][j],1);
+            graph.fillRect(j,0,1,dataArray[0][j]);
         }
     }
 }

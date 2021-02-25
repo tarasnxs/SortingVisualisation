@@ -12,6 +12,7 @@ public class Graph extends JComponent {
 
     public Graph(MainController mainController) {
         this.mainController = mainController;
+        setLocation(195, 0);
         setSize(WIDTH, HEIGHT);
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setVisible(true);

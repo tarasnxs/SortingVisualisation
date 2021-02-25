@@ -13,7 +13,6 @@ public class MainController {
 
     public MainController() {
         sortAlgorithms = new SortAlgorithms();
-        //TODO Delete this
         currentDataModel = new ColorDataModel(1);
         try {
             currentSortAlgorithm = sortAlgorithms.getSortAlgorithm(BubbleSort.class.getSimpleName());

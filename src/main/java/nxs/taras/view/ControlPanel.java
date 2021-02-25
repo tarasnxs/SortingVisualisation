@@ -4,15 +4,20 @@ import nxs.taras.controller.MainController;
 import nxs.taras.model.BlackWhiteDataModel;
 import nxs.taras.model.ColorDataModel;
 import nxs.taras.model.DataModel;
+import nxs.taras.sort.ParallelQuickSort;
+import nxs.taras.sort.QuickSort;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.concurrent.ForkJoinPool;
 
 public class ControlPanel extends JPanel {
+    private static ForkJoinPool forkJoinPool = new ForkJoinPool();
     private static final int WIDTH = 190;
     private static final int HEIGHT = 768;
     private MainController mainController;
     private Graph graph;
+
     private JSlider speedSlider;
     private JLabel currentSpeed;
     private ButtonGroup sortButtonGroup;
@@ -43,16 +48,42 @@ public class ControlPanel extends JPanel {
 
             new Thread(() -> {
                 sortB.setEnabled(false);
-                boolean isSorted = false;
-                while (!isSorted) {
-                    isSorted = true;
-                    for (int i = 0; i < mainController.getCurrentDataModel().getDataArray().length; i++)
-                        isSorted = isSorted & mainController.getCurrentSortAlgorithm().doSortIteration(mainController.getCurrentDataModel().getArrayToSort(i));
-                    graph.repaint();
-                    try {
-                        Thread.sleep(speedSlider.getValue());
-                    } catch (InterruptedException interruptedException) {
-                        interruptedException.printStackTrace();
+                if (mainController.getCurrentSortAlgorithm() instanceof ParallelQuickSort) {
+                    for (int i = 0; i < mainController.getCurrentDataModel().getArrayCount(); i++) {
+                        ParallelQuickSort parallelQuickSort =
+                                new ParallelQuickSort(
+                                        mainController.getCurrentDataModel(),
+                                        this,
+                                        graph,
+                                        0,
+                                        mainController.getCurrentDataModel().getArrayToSort(i).length - 1,
+                                        i);
+                        forkJoinPool.execute(parallelQuickSort);
+                        while (forkJoinPool.getActiveThreadCount() > 0) {
+                            try {
+                                Thread.sleep(1000l);
+                            } catch (InterruptedException interruptedException) {
+                                interruptedException.printStackTrace();
+                            }
+                            System.out.println("Active threads count : " + forkJoinPool.getActiveThreadCount());
+                        }
+                    }
+
+                } else if (mainController.getCurrentSortAlgorithm() instanceof QuickSort) {
+                    QuickSort quickSort = (QuickSort) mainController.getCurrentSortAlgorithm();
+                    quickSort.sort(mainController.getCurrentDataModel(), this, graph);
+                } else {
+                    boolean isSorted = false;
+                    while (!isSorted) {
+                        isSorted = true;
+                        for (int i = 0; i < mainController.getCurrentDataModel().getDataArray().length; i++)
+                            isSorted = isSorted & mainController.getCurrentSortAlgorithm().doSortIteration(mainController.getCurrentDataModel().getArrayToSort(i));
+                        graph.repaint();
+                        try {
+                            Thread.sleep(speedSlider.getValue());
+                        } catch (InterruptedException interruptedException) {
+                            interruptedException.printStackTrace();
+                        }
                     }
                 }
                 sortB.setEnabled(true);
@@ -69,7 +100,6 @@ public class ControlPanel extends JPanel {
             JRadioButton jRadioButton = new JRadioButton(sort);
             jRadioButton.addActionListener(e -> {
                 mainController.setCurrentSortAlgorithm(((JRadioButton) e.getSource()).getText());
-                System.out.println(mainController.getCurrentSortAlgorithm().getClass().getSimpleName());
             });
             sortButtonGroup.add(jRadioButton);
             add(jRadioButton);
@@ -103,5 +133,9 @@ public class ControlPanel extends JPanel {
         });
         dataModelButtonGroup.add(multiColorDataModel);
         add(multiColorDataModel);
+    }
+
+    public JSlider getSpeedSlider() {
+        return speedSlider;
     }
 }
